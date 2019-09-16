@@ -8,6 +8,42 @@ import java.util.Scanner;
 public class BookingRegistry {
     List registry = new ArrayList();
 
+    public Connection connectToDatabase() {
+        try {
+            Class.forName("org.postgresql.Driver").newInstance();
+        } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+            System.err.println("Can’t load driver. Verify CLASSPATH");
+            System.err.println(e.getMessage());
+        }
+
+        Connection conn = null;
+
+        DriverManager.setLoginTimeout(120);
+        try {
+            String url = new StringBuilder()
+                    .append("jdbc:")
+                    .append("postgresql")
+                    .append("://")
+                    .append("127.0.0.1")
+                    .append(":")
+                    .append(5432)
+                    .append("/")
+                    .append("Booking")
+                    .append("?user=")
+                    .append("postgres")
+                    .append("&password=")
+                    .append("k0nyvtar").toString();
+            conn = DriverManager.getConnection(url);
+        } catch (SQLException e) {
+            System.err.println("Cannot connect to the database: " + e.getMessage());
+        }
+
+        if (conn == null) {
+            System.out.println("NO CONNECTION");
+        }
+        return conn;
+    }
+
     public void addRecordsToDatabase(Accomodation accomodation, Connection conn) {
         try (PreparedStatement ps1 = conn
                 .prepareStatement("insert into accomodation (id,type, bed_type, max_guests, description)"
@@ -49,37 +85,28 @@ public class BookingRegistry {
     }
 
     public void listAccomodationPrices(Connection conn) {
+        boolean recordCounter = false;
         try (Statement st = conn.createStatement();
              ResultSet rs = st.executeQuery("SELECT accomodation.*,room_fair.* FROM accomodation \n" +
                      "RIGHT JOIN accomodation_fair_relation ON accomodation.id=accomodation_fair_relation.id_accomodation \n" +
                      "RIGHT JOIN room_fair ON accomodation_fair_relation.id_room_fair=room_fair.id")) {
-            if (rs.next()) {
-                while (rs.next()) {
-                    System.out.println("Room type: " + rs.getString("type") + " | bed type: " + rs.getString("bed_type") + " | max number of guests: " + rs.getInt("max_guests") + " | description of room: " + rs.getString("description") + " | price of room: " + rs.getDouble("value") + " | season: " + rs.getString("season"));
-                }
-            } else {
-                System.out.println("No records on file!");
+            while (rs.next()) {
+                System.out.println("Room type: " + rs.getString("type") + " | bed type: " + rs.getString("bed_type") + " | max number of guests: " + rs.getInt("max_guests") + " | description of room: " + rs.getString("description") + " | price of room: " + rs.getDouble("value") + " | season: " + rs.getString("season"));
+                recordCounter = true;
             }
         } catch (
                 SQLException e) {
             e.printStackTrace();
+        }
+        if (recordCounter == false) {
+            System.out.println("No records on file!");
         }
         System.out.println("-------------------------------------------");
         System.out.println(" ");
     }
 
     public void deleteAllRecords(Connection conn) {
-        try (PreparedStatement ps1 = conn.prepareStatement("DELETE FROM accomodation_fair_relation")) {
-            ps1.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try (PreparedStatement ps1 = conn.prepareStatement("DELETE FROM accomodation")) {
-            ps1.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-        try (PreparedStatement ps1 = conn.prepareStatement("DELETE FROM room_fair")) {
+        try (PreparedStatement ps1 = conn.prepareStatement("DELETE FROM accomodation_fair_relation; DELETE FROM accomodation; DELETE FROM room_fair;")) {
             ps1.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
