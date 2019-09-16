@@ -42,11 +42,6 @@ public class BookingRegistryTest {
     public void listRecordsToDatabaseTest() throws SQLException {
         accomodation = new Accomodation(1, "room", "single bed", 1, "good", 23, "winter");
         registry.addRecordsToDatabase(accomodation, conn);
-        try (Statement st = conn.createStatement();
-             ResultSet rs = st.executeQuery("SELECT COUNT(*) FROM accomodation;")) {
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
         registry.listAccomodationPrices(conn);
     }
 }
